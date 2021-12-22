@@ -70,6 +70,7 @@ class Neural_Network:
             if last_error < best_error:
                 best_error = last_error
                 best_complexity = layers_list
+                break
             if last_error < 2 and last_error < error -0.4:
                 train_an_other_network = False
             else:

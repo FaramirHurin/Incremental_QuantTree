@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import logging
 from experiments_dataHandler import Data
+import matplotlib.pyplot as plt
 from algorithms.neural_network import  Neural_Network
 
 
@@ -18,8 +19,8 @@ BINS_NUMBER = 32
 N_VALUES = [64, 1024] # [64, 128, 256, 512, 1024]
 INITIAL_BINS = np.ones(BINS_NUMBER) / BINS_NUMBER
 M_values = [32, 1024]
-EXPERIMENTS = 2
-trees_number = 2
+EXPERIMENTS = 600
+trees_number = 40
 STATISTIC = qt.pearson_statistic
 DIMENSIONS = [8]
 ALPHA = [0.001]
@@ -141,19 +142,18 @@ def run_experiment(nu, N, M, SKL, statistic, dimension, results):
                 results = store_experiments_result(M, skl, incremental_results, results)
                 normal_results = quantForest.play_with_batch(batch)
                 results = store_experiments_result( M, skl, normal_results, results)
-
-
     return results
 
+def create_experiments_results(N_VALUES, M_values, NU, SKL_list, STATISTIC, results):
+    for N in N_VALUES:
+        for M in M_values:
+            for dimension in DIMENSIONS:
+                results = run_experiment(NU, N, M, SKL_list, STATISTIC, dimension, results)
+    data_frame = pd.DataFrame(results)
+    data_frame.to_csv('offline_results.csv')
 
-for N in N_VALUES:
-    for M in M_values:
-        for dimension in DIMENSIONS:
-            results = run_experiment(NU, N, M, SKL_list, STATISTIC, dimension, results)
-data_frame = pd.DataFrame(results)
-data_frame.to_csv('offline_results.csv')
+create_experiments_results(N_VALUES, M_values, NU, SKL_list, STATISTIC, results)
 
-print('Fase 1 finita')
 
 frame = pd.read_csv('offline_results.csv')
 
@@ -169,4 +169,5 @@ for index in range(100):
     # threshold = qt.ChangeDetectionTest(tree, int(NU), STATISTIC).estimate_quanttree_threshold(ALPHA, 50000)
     false_alarms = [value for value in values if value > threshold]
     logger.debug('FPR = ' + str(len(false_alarms) / len(values)) + '. Alpha is '+ str((index+1)/1000))
+
 
