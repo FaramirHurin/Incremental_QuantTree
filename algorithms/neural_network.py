@@ -148,5 +148,4 @@ def create_NeuralNetwork_training_set( binsNumber: int, dataNumber: int, from_he
     frame = pd.DataFrame(allData)
     frame.to_csv('trainingSet_NN.csv')
 
-
-# create_NeuralNetwork_training_set(binsNumber=32, nu=32, dataNumber=500000,from_here_asymptotic=4000,max_data_number=3000)
+create_NeuralNetwork_training_set(binsNumber=32, nu=32, dataNumber=500000,from_here_asymptotic=4000,max_data_number=3000)
