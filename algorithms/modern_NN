@@ -1,0 +1,46 @@
+ import sklearn
+
+
+class NeuralNetwork:
+    def __init__(self, interesting_alphas):
+        locations = self.data_locations(interesting_alphas)
+        self.learners = {}
+        self.normalizers = {}
+        for alpha in interesting_alphas:
+            location = locations[alpha]
+            self.noralizers[alpha], self.models[alpha] = self.self.retrieve_data_and_optimze_for_settings(location)
+        return
+
+
+    def find_locations_for_alphas(self, alpha_list):
+        locations = None
+        return locations
+
+    # Optimizes the hyperarameters and returns the predictor
+    def train_network(self, X, y, learner_type):
+        param_grid = {
+            'hidden_layer_sizes': [(5), (10), (20), (50), (10, 10), (20, 20), (50, 50), (20, 20, 20), (50, 50, 50), (100, 100, 100) ],
+            'solver': ['lbfgs', 'sgd', 'adam'],
+            'learning_rate': ['constant', 'invscaling', 'adaptive']
+        }
+        grid_search = sklearn.model_selection.GridSearchCV(learner=learner_type,param_grid=param_grid)
+        grid_search.fit(X, y)
+        return grid_search
+
+    def normalize_and_fit_data(self, X, y, learner_type):
+        normalizer = sklearn.preprocessing.Normalizer()
+        normalizer.fit_transform(X)
+        model = self.train_network(X, y, learner_type)
+        return normalizer, model
+
+    def retrieve_data_and_optimze_for_settings(self, data_location):
+        learner_type =  sklearn.neural_network.MLPRegressor(n_iter_no_change=50, max_iter=2000)
+        #read_csv
+        # retrieve X and y
+        X = None
+        y = None
+        normalizer, model = self.normalize_and_fit_data(self, X, y, learner_type)
+        return normalizer, model
+
+
+    
