@@ -5,7 +5,7 @@ import pandas as pd
 import logging
 from experiments_dataHandler import Data
 import matplotlib.pyplot as plt
-from algorithms.neural_network import  Neural_Network
+from algorithms.neural_network import  Neural_Network_ignoring_alpha
 from algorithms.auxiliary_project_code import create_bins_combination
 
 
@@ -20,11 +20,11 @@ BINS_NUMBER = 32
 N_VALUES = [256] # [64, 128, 256, 512, 1024]
 INITIAL_BINS = create_bins_combination(BINS_NUMBER)
 M_values = [32]
-EXPERIMENTS = 5000
-trees_number = 2
+EXPERIMENTS = 10
+trees_number = 10000
 STATISTIC = qt.pearson_statistic
 DIMENSIONS = [16]
-ALPHA = [0.001]
+ALPHA = [0.01]
 results = None
 SKL_list =[0] # ,1 , 2, 6, 10
 
@@ -144,20 +144,20 @@ def create_experiments_results(N_VALUES, M_values, NU, SKL_list, STATISTIC, expe
     data_frame.to_csv('offline_results.csv')
 
 
-"""logger.debug('Create experiments')
+logger.debug('Create experiments')
 create_experiments_results(N_VALUES=N_VALUES, M_values=M_values, NU=NU, SKL_list=SKL_list,
                            STATISTIC=STATISTIC, experiments=EXPERIMENTS, results=results)
 
-"""
+
 frame = pd.read_csv('offline_results.csv')
 TREE_TYPE = 'Incremental'
 frame_0 = frame.loc[(frame['Total data size'] == 256) & (frame['Tree tpye']== TREE_TYPE)]
 tree_codes = np.unique(np.array(frame_0.loc[:, 'Tree code']))
 
-network = Neural_Network()
+network = Neural_Network_ignoring_alpha()
 
 ALPHA_TO_CHECK = 8
-alpha_list = [(index+1)/(ALPHA_TO_CHECK * 15) for index in range(ALPHA_TO_CHECK)]
+alpha_list = [ 0.01]
 FPR_list = []
 
 USES_NN = True
@@ -174,32 +174,30 @@ for alpha in alpha_list:
         tree = qt.QuantTree(pi_values)
         tree.ndata = n_data
         threshold = qt.ChangeDetectionTest(model=tree, nu=NU,
-                                         statistic=qt.pearson_statistic).estimate_quanttree_threshold(alpha=[alpha],
-                                                                                                  B=18000)
-    for tree_code in tree_codes:
-        this_tree = frame_0.loc[frame_0['Tree code'] == tree_code]
-        pi_values = np.array(this_tree.iloc[0, -BINS_NUMBER:])
-        n_data = int(this_tree.loc[:, 'Total data size'].head(1))
-        stat_values = this_tree.loc[:, 'Stat value'].values
-        assert sum(pi_values) == 1
-        if USES_NN:
+                                         statistic=qt.pearson_statistic).estimate_quanttree_threshold(alpha=[alpha],  B=18000)
+        for tree in tree_codes:
+            numberOfAccepted_for_this_tree = len([value for value in stat_values if  value > threshold]) \
+                                             + 1/2 * len([value for value in stat_values if  value == threshold])
+            accepted_for_alpha += numberOfAccepted_for_this_tree
+    elif TREE_TYPE == 'Incremental':
+        for tree_code in tree_codes:
+            this_tree = frame_0.loc[frame_0['Tree code'] == tree_code]
+            pi_values = np.array(this_tree.iloc[0, -BINS_NUMBER:])
+            n_data = int(this_tree.loc[:, 'Total data size'].head(1))
+            stat_values = this_tree.loc[:, 'Stat value'].values
+            assert sum(pi_values) == 1
+            if USES_NN:
+                print(alpha)
+                assert alpha == 0.01
+                threshold = network.predict_value(bins=pi_values, ndata=n_data, alpha=[alpha])[0]
+                tree = qt.QuantTree(pi_values)
+                tree.ndata = n_data
+                alternative_threshold = qt.ChangeDetectionTest(model=tree, nu=NU, statistic=qt.pearson_statistic).\
+                    estimate_quanttree_threshold(alpha=[alpha], B=8000)
+                print(threshold, alternative_threshold)
 
-            threshold = network.predict_value(bins=pi_values, ndata=n_data, alpha=[alpha])[0]
-
-            tree = qt.QuantTree(pi_values)
-            tree.ndata = n_data
-            alternative_trheshold = qt.ChangeDetectionTest(model=tree, nu=NU, statistic=qt.pearson_statistic).\
-                estimate_quanttree_threshold(alpha=[alpha], B=8000)
-            print(threshold, alternative_trheshold)
-
-        elif TREE_TYPE == 'Incremental':
-            tree = qt.QuantTree(pi_values)
-            tree.ndata = n_data
-            threshold = qt.ChangeDetectionTest(model=tree, nu=NU, statistic=qt.pearson_statistic).\
-                estimate_quanttree_threshold(alpha=[alpha], B=9000)
-
-        numberOfAccepted_for_this_tree = len([value for value in stat_values if  value > threshold])
-        accepted_for_alpha += numberOfAccepted_for_this_tree
+            numberOfAccepted_for_this_tree = len([value for value in stat_values if  value > threshold]) + 1/2 * len([value for value in stat_values if  value == threshold])
+            accepted_for_alpha += numberOfAccepted_for_this_tree
     FPR_list.append(accepted_for_alpha / frame_0.shape[0])
     print(alpha, FPR_list[-1])
 
